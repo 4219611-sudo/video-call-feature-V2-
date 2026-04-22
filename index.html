@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Video Chat</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+body{margin:0;background:#000;color:#fff;font-family:sans-serif;display:flex;justify-content:center;padding:20px}
+.app{width:100%;max-width:900px}
+input,button{padding:8px;border-radius:6px;border:none;font-size:14px}
+button{cursor:pointer}
+.top{display:flex;gap:10px;margin-bottom:10px}
+#username{flex:1;background:#111;color:#fff;border:1px solid #333}
+#room{flex:1;background:#111;color:#fff;border:1px solid #333}
+#start{background:#ff7a00;color:#000;font-weight:bold}
+.videos{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:10px 0}
+video{width:100%;background:#000;border-radius:10px}
+.label{font-size:12px;margin-top:4px;text-align:center;color:#ff7a00}
+.controls{display:flex;gap:10px;margin-bottom:10px}
+.controls button{background:#222;color:#fff;border:1px solid #444}
+#end{background:#ff3b3b;color:#fff}
+.chat{background:#111;border:1px solid #333;border-radius:10px;padding:10px}
+#messages{height:120px;overflow-y:auto;font-size:13px;margin-bottom:8px}
+.msg{margin-bottom:4px}
+</style>
+</head>
+<body>
+<div class="app">
+
+<div class="top">
+  <input id="username" placeholder="Your username">
+  <input id="room" placeholder="Room code">
+  <button id="start">Join</button>
+</div>
+
+<div class="videos">
+  <div>
+    <video id="local" autoplay muted playsinline></video>
+    <div class="label">You</div>
+  </div>
+  <div>
+    <video id="remote" autoplay playsinline></video>
+    <div class="label" id="friendLabel">Friend</div>
+  </div>
+</div>
+
+<div class="controls">
+  <button id="cam">🎥</button>
+  <button id="mic">🎙️</button>
+  <button id="end" disabled>End</button>
+</div>
+
+<div class="chat">
+  <div id="messages"></div>
+  <div style="display:flex;gap:6px">
+    <input id="chatInput" placeholder="Type..." style="flex:1;background:#000;color:#fff;border:1px solid #333">
+    <button id="send" style="background:#ff7a00;color:#000">Send</button>
+  </div>
+</div>
+
+</div>
+
+<script>
+const SIGNAL = "wss://your-server-here"; // <-- replace this
+let ws, pc, stream, room, username;
+
+const $ = id => document.getElementById(id);
+
+async function start() {
+  username = $("username").value.trim();
+  room = $("room").value.trim();
+  if(!username || !room) return alert("Enter username + room");
+
+  $("friendLabel").textContent = "Waiting…";
+  $("start").disabled = true;
+
+  stream = await navigator.mediaDevices.getUserMedia({video:true,audio:true});
+  $("local").srcObject = stream;
+
+  ws = new WebSocket(SIGNAL);
+  ws.onopen = () => ws.send(JSON.stringify({type:"join",room,username}));
+  ws.onmessage = e => handle(JSON.parse(e.data));
+
+  pc = new RTCPeerConnection({iceServers:[{urls:"stun:stun.l.google.com:19302"}]});
+  stream.getTracks().forEach(t=>pc.addTrack(t,stream));
+  pc.ontrack = e => $("remote").srcObject = e.streams[0];
+  pc.onicecandidate = e => e.candidate && send({type:"ice",candidate:e.candidate});
+}
+
+async function handle(d){
+  if(d.type==="user") $("friendLabel").textContent = d.username;
+  if(d.type==="offer"){
+    await pc.setRemoteDescription(d.offer);
+    let ans = await pc.createAnswer();
+    await pc.setLocalDescription(ans);
+    send({type:"answer",answer:ans});
+    $("end").disabled = false;
+  }
+  if(d.type==="answer"){
+    await pc.setRemoteDescription(d.answer);
+    $("end").disabled = false;
+  }
+  if(d.type==="ice") pc.addIceCandidate(d.candidate);
+  if(d.type==="chat") addMsg(d.username, d.text);
+}
+
+function send(o){ ws.send(JSON.stringify({...o,room,username})); }
+
+$("start").onclick = async () => {
+  await start();
+  let offer = await pc.createOffer();
+  await pc.setLocalDescription(offer);
+  send({type:"offer",offer});
+};
+
+$("end").onclick = () => {
+  pc.close(); pc=null;
+  $("remote").srcObject=null;
+  $("end").disabled=true;
+  $("start").disabled=false;
+};
+
+$("cam").onclick = () => stream.getVideoTracks()[0].enabled ^= 1;
+$("mic").onclick = () => stream.getAudioTracks()[0].enabled ^= 1;
+
+$("send").onclick = () => {
+  let text = $("chatInput").value.trim();
+  if(!text) return;
+  send({type:"chat",text});
+  addMsg("You",text);
+  $("chatInput").value="";
+};
+
+function addMsg(user,text){
+  $("messages").innerHTML += `<div class="msg"><b style="color:#ff7a00">${user}:</b> ${text}</div>`;
+  $("messages").scrollTop = $("messages").scrollHeight;
+}
+</script>
+</body>
+</html>
