@@ -1,140 +1,262 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-<meta charset="UTF-8">
-<title>Video Chat</title>
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<style>
-body{margin:0;background:#000;color:#fff;font-family:sans-serif;display:flex;justify-content:center;padding:20px}
-.app{width:100%;max-width:900px}
-input,button{padding:8px;border-radius:6px;border:none;font-size:14px}
-button{cursor:pointer}
-.top{display:flex;gap:10px;margin-bottom:10px}
-#username{flex:1;background:#111;color:#fff;border:1px solid #333}
-#room{flex:1;background:#111;color:#fff;border:1px solid #333}
-#start{background:#ff7a00;color:#000;font-weight:bold}
-.videos{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:10px 0}
-video{width:100%;background:#000;border-radius:10px}
-.label{font-size:12px;margin-top:4px;text-align:center;color:#ff7a00}
-.controls{display:flex;gap:10px;margin-bottom:10px}
-.controls button{background:#222;color:#fff;border:1px solid #444}
-#end{background:#ff3b3b;color:#fff}
-.chat{background:#111;border:1px solid #333;border-radius:10px;padding:10px}
-#messages{height:120px;overflow-y:auto;font-size:13px;margin-bottom:8px}
-.msg{margin-bottom:4px}
-</style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gohan's Tutoring - Live Virtual Classroom</title>
+    <!-- Tailwind CSS CDN for styling -->
+    <script src="tailwindcss.com"></script>
+    <style>
+        /* Custom scrollbar handling for clean messaging panels */
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 4px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: #020617;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #334155;
+            border-radius: 9999px;
+        }
+    </style>
 </head>
-<body>
-<div class="app">
+<body class="bg-slate-950 h-screen flex flex-col md:flex-row text-slate-100 overflow-hidden font-sans">
 
-<div class="top">
-  <input id="username" placeholder="Your username">
-  <input id="room" placeholder="Room code">
-  <button id="start">Join</button>
-</div>
+    <!-- LEFT COMPONENT: Primary Video Screen Canvas Workspace -->
+    <main class="flex-1 relative flex flex-col items-center justify-center p-4 bg-slate-900">
+        
+        <!-- Main Video Screen Frame View (Remote Peer Feed) -->
+        <div class="w-full h-full rounded-2xl bg-slate-950 flex items-center justify-center overflow-hidden border border-slate-800 relative">
+            <video id="remoteVideo" autoplay playsinline class="w-full h-full object-cover"></video>
+            
+            <!-- Connection Status Dynamic Placeholder Panel -->
+            <div id="remotePlaceholder" class="absolute inset-0 flex flex-col items-center justify-center text-slate-500 bg-slate-950 px-4 text-center">
+                <!-- Fallback Digital Branding Emblem Asset -->
+                <div class="mb-4 bg-slate-900 border border-slate-800 px-5 py-2.5 rounded-xl shadow-2xl">
+                    <span class="text-lg font-black tracking-wider text-white">Gohan's <span class="text-slate-400 font-normal italic">Tutoring</span></span>
+                </div>
+                <span class="text-sm font-semibold text-slate-300">Awaiting Classroom Participant Connection...</span>
+                <span class="text-xs text-slate-600 mt-1.5 max-w-sm">Please copy and share your current browser address bar URL with your student or tutor to establish sync.</span>
+            </div>
+        </div>
 
-<div class="videos">
-  <div>
-    <video id="local" autoplay muted playsinline></video>
-    <div class="label">You</div>
-  </div>
-  <div>
-    <video id="remote" autoplay playsinline></video>
-    <div class="label" id="friendLabel">Friend</div>
-  </div>
-</div>
+        <!-- Picture-in-Picture Local Desktop Camera Feed Preview Box -->
+        <div class="absolute bottom-24 right-8 w-32 h-44 md:w-40 md:h-56 rounded-xl bg-slate-950 border border-slate-700 overflow-hidden shadow-2xl z-10">
+            <video id="localVideo" autoplay muted playsinline class="w-full h-full object-cover -scale-x-100"></video>
+        </div>
 
-<div class="controls">
-  <button id="cam">🎥</button>
-  <button id="mic">🎙️</button>
-  <button id="end" disabled>End</button>
-</div>
+        <!-- Hardware Call Controller Tray Overlay -->
+        <div class="absolute bottom-6 flex space-x-4 bg-slate-950/95 backdrop-blur-md px-6 py-3 rounded-full border border-slate-800 shadow-2xl z-20">
+            <button id="toggleMic" class="p-3 bg-slate-800 hover:bg-slate-700 active:scale-95 text-xl rounded-full transition-all cursor-pointer" title="Mute/Unmute Mic">🎤</button>
+            <button id="toggleCam" class="p-3 bg-slate-800 hover:bg-slate-700 active:scale-95 text-xl rounded-full transition-all cursor-pointer" title="Toggle On/Off Video">📷</button>
+        </div>
+    </main>
 
-<div class="chat">
-  <div id="messages"></div>
-  <div style="display:flex;gap:6px">
-    <input id="chatInput" placeholder="Type..." style="flex:1;background:#000;color:#fff;border:1px solid #333">
-    <button id="send" style="background:#ff7a00;color:#000">Send</button>
-  </div>
-</div>
+    <!-- RIGHT COMPONENT: Interactive Realtime Chat Sidebar Interface Panel -->
+    <aside class="w-full md:w-96 h-2/5 md:h-full bg-slate-950 border-t md:border-t-0 md:border-l border-slate-900 flex flex-col">
+        
+        <!-- Sidebar Workspace Branding Header Section Container -->
+        <div class="p-4 border-b border-slate-900 flex items-center justify-between bg-black">
+            <!-- Inline Vector SVG Reconstruction of Gohan's Tutoring Monochromatic Contrast Logo Banner -->
+            <div class="flex items-center">
+                <svg class="h-8 w-auto" viewBox="0 0 400 100" fill="none" xmlns="w3.org">
+                    <rect width="200" height="100" fill="black"/>
+                    <rect x="200" width="200" height="100" fill="#E2E8F0"/>
+                    <!-- Styled Text fallbacks rendering script typography alignment profiles -->
+                    <text x="20" y="65" fill="white" font-family="Georgia, 'Times New Roman', serif" font-size="36" font-weight="bold" font-style="italic">Gohan's</text>
+                    <text x="215" y="65" fill="black" font-family="Georgia, 'Times New Roman', serif" font-size="36" font-weight="bold" font-style="italic">Tutoring</text>
+                </svg>
+            </div>
+            <!-- Pipeline Server Connection Monitoring Node Tag -->
+            <div class="flex items-center space-x-2">
+                <span class="h-2 w-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                <span class="text-[10px] uppercase tracking-widest text-emerald-400 font-bold">Class Active</span>
+            </div>
+        </div>
 
-</div>
+        <!-- Chat Stream Interactive Dialogue Box Message List Target Container -->
+        <div id="chatMessages" class="flex-1 p-4 overflow-y-auto space-y-3.5 custom-scrollbar bg-slate-950">
+            <div class="bg-slate-900/40 border border-slate-800/80 p-3.5 rounded-xl max-w-[90%] text-xs text-slate-400 leading-relaxed">
+                Welcome to your <strong class="text-slate-200 font-semibold">Gohan's Tutoring</strong> portal. Please allow system hardware prompt permissions to start synchronization routines.
+            </div>
+        </div>
 
-<script>
-const SIGNAL = "wss://your-server-here"; // <-- replace this
-let ws, pc, stream, room, username;
+        <!-- Interactive Messaging Terminal System Submission Controller Form -->
+        <form id="chatForm" class="p-4 border-t border-slate-900 flex gap-2 bg-black">
+            <input type="text" id="chatInput" autocomplete="off" placeholder="Type a message or ask a tutoring question..." class="flex-1 bg-slate-900 border border-slate-800 rounded-xl px-4 py-3 text-xs text-slate-100 focus:outline-none focus:border-slate-600 transition placeholder-slate-600">
+            <button type="submit" class="bg-white hover:bg-slate-200 text-black active:scale-95 px-5 py-3 rounded-xl text-xs font-black tracking-wider uppercase transition-all cursor-pointer">Send</button>
+        </form>
+    </aside>
 
-const $ = id => document.getElementById(id);
+    <!-- Client Web Application WebSocket Connection Library Module Asset Initialization -->
+    <script src="/socket.io/socket.io.js"></script>
+    <script>
+        // Realtime Client Application Instance Configuration Initialization
+        const socket = typeof io !== 'undefined' ? io() : { emit: () => {}, on: () => {} };
 
-async function start() {
-  username = $("username").value.trim();
-  room = $("room").value.trim();
-  if(!username || !room) return alert("Enter username + room");
+        // Parse unique URL search string variables to extract specific active call session keys
+        const urlParams = new URLSearchParams(window.location.search);
+        let roomId = urlParams.get('room');
+        if (!roomId) {
+            roomId = 'gohans-lounge-' + Math.random().toString(36).substring(2, 7);
+            window.history.replaceState({}, '', `?room=${roomId}`);
+        }
 
-  $("friendLabel").textContent = "Waiting…";
-  $("start").disabled = true;
+        // DOM UI Node Selectors Discovery Configuration
+        const localVideo = document.getElementById('localVideo');
+        const remoteVideo = document.getElementById('remoteVideo');
+        const remotePlaceholder = document.getElementById('remotePlaceholder');
+        const chatForm = document.getElementById('chatForm');
+        const chatInput = document.getElementById('chatInput');
+        const chatMessages = document.getElementById('chatMessages');
+        const toggleMicBtn = document.getElementById('toggleMic');
+        const toggleCamBtn = document.getElementById('toggleCam');
 
-  stream = await navigator.mediaDevices.getUserMedia({video:true,audio:true});
-  $("local").srcObject = stream;
+        let localStream;
+        let peerConnection;
+        let remoteUserSocketId = null;
+        let micEnabled = true;
+        let camEnabled = true;
 
-  ws = new WebSocket(SIGNAL);
-  ws.onopen = () => ws.send(JSON.stringify({type:"join",room,username}));
-  ws.onmessage = e => handle(JSON.parse(e.data));
+        // Fallback STUN/ICE routing node structures
+        const rtcConfig = {
+            iceServers: [
+                { urls: 'stun:google.com' },
+                { urls: 'stun:google.com' }
+            ]
+        };
 
-  pc = new RTCPeerConnection({iceServers:[{urls:"stun:stun.l.google.com:19302"}]});
-  stream.getTracks().forEach(t=>pc.addTrack(t,stream));
-  pc.ontrack = e => $("remote").srcObject = e.streams[0];
-  pc.onicecandidate = e => e.candidate && send({type:"ice",candidate:e.candidate});
-}
+        // Connect client peripherals to application framework context
+        async function startSession() {
+            try {
+                localStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+                localVideo.srcObject = localStream;
+                
+                // Initialize room handshakes over messaging network pipelines
+                socket.emit('join-room', roomId);
+            } catch (err) {
+                console.error('System Access Error:', err);
+                appendMessage('System Alert', 'Camera/microphone access denied or unavailable. You can still use text chat.', false);
+            }
+        }
 
-async function handle(d){
-  if(d.type==="user") $("friendLabel").textContent = d.username;
-  if(d.type==="offer"){
-    await pc.setRemoteDescription(d.offer);
-    let ans = await pc.createAnswer();
-    await pc.setLocalDescription(ans);
-    send({type:"answer",answer:ans});
-    $("end").disabled = false;
-  }
-  if(d.type==="answer"){
-    await pc.setRemoteDescription(d.answer);
-    $("end").disabled = false;
-  }
-  if(d.type==="ice") pc.addIceCandidate(d.candidate);
-  if(d.type==="chat") addMsg(d.username, d.text);
-}
+        // Initialize Peer Node WebRTC Configurations
+        function createPeerConnection(targetSocketId) {
+            peerConnection = new RTCPeerConnection(rtcConfig);
+            remoteUserSocketId = targetSocketId;
 
-function send(o){ ws.send(JSON.stringify({...o,room,username})); }
+            if (localStream) {
+                localStream.getTracks().forEach(track => {
+                    peerConnection.addTrack(track, localStream);
+                });
+            }
 
-$("start").onclick = async () => {
-  await start();
-  let offer = await pc.createOffer();
-  await pc.setLocalDescription(offer);
-  send({type:"offer",offer});
-};
+            peerConnection.ontrack = (event) => {
+                if (remoteVideo) {
+                    remoteVideo.srcObject = event.streams[0];
+                    if (remotePlaceholder) remotePlaceholder.classList.add('hidden');
+                }
+            };
 
-$("end").onclick = () => {
-  pc.close(); pc=null;
-  $("remote").srcObject=null;
-  $("end").disabled=true;
-  $("start").disabled=false;
-};
+            peerConnection.onicecandidate = (event) => {
+                if (event.candidate) {
+                    socket.emit('webrtc-ice-candidate', {
+                        target: targetSocketId,
+                        candidate: event.candidate
+                    });
+                }
+            };
+        }
 
-$("cam").onclick = () => stream.getVideoTracks()[0].enabled ^= 1;
-$("mic").onclick = () => stream.getAudioTracks()[0].enabled ^= 1;
+        // WebRTC Connection Handshake Event Management
+        socket.on('user-connected', async (userId) => {
+            createPeerConnection(userId);
+            const offer = await peerConnection.createOffer();
+            await peerConnection.setLocalDescription(offer);
+            socket.emit('webrtc-offer', { target: userId, sdp: peerConnection.localDescription });
+        });
 
-$("send").onclick = () => {
-  let text = $("chatInput").value.trim();
-  if(!text) return;
-  send({type:"chat",text});
-  addMsg("You",text);
-  $("chatInput").value="";
-};
+        socket.on('webrtc-offer', async (data) => {
+            createPeerConnection(data.sender);
+            await peerConnection.setRemoteDescription(new RTCSessionDescription(data.sdp));
+            const answer = await peerConnection.createAnswer();
+            await peerConnection.setLocalDescription(answer);
+            socket.emit('webrtc-answer', { target: data.sender, sdp: peerConnection.localDescription });
+        });
 
-function addMsg(user,text){
-  $("messages").innerHTML += `<div class="msg"><b style="color:#ff7a00">${user}:</b> ${text}</div>`;
-  $("messages").scrollTop = $("messages").scrollHeight;
-}
-</script>
+        socket.on('webrtc-answer', async (data) => {
+            if (peerConnection) {
+                await peerConnection.setRemoteDescription(new RTCSessionDescription(data.sdp));
+            }
+        });
+
+        socket.on('webrtc-ice-candidate', async (data) => {
+            if (peerConnection) {
+                try {
+                    await peerConnection.addIceCandidate(new RTCIceCandidate(data.candidate));
+                } catch (e) {
+                    console.error('Error adding received ICE candidate', e);
+                }
+            }
+        });
+
+        socket.on('user-disconnected', () => {
+            if (peerConnection) peerConnection.close();
+            if (remoteVideo) remoteVideo.srcObject = null;
+            if (remotePlaceholder) remotePlaceholder.classList.remove('hidden');
+            appendMessage('System Notification', 'Participant left the video session pipeline.', false);
+        });
+
+        // Chat Terminal Interactions Engine UI Management
+        chatForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            const textContent = chatInput.value.trim();
+            if (!textContent) return;
+
+            socket.emit('send-chat-message', textContent);
+            appendMessage('You', textContent, true);
+            chatInput.value = '';
+        });
+
+        socket.on('chat-message', (data) => {
+            appendMessage(data.sender, data.text, false);
+        });
+
+        function appendMessage(sender, text, isSelf = false) {
+            const container = document.createElement('div');
+            container.className = isSelf 
+                ? 'bg-slate-900 border border-slate-800 p-3 rounded-xl max-w-[85%] ml-auto text-right text-xs shadow-md'
+                : 'bg-slate-900/40 border border-slate-900 p-3 rounded-xl max-w-[85%] text-xs shadow-sm';
+            
+            container.innerHTML = `
+                <p class="font-black tracking-wide mb-1 text-[10px] uppercase ${isSelf ? 'text-slate-400' : 'text-white'}">${sender}</p>
+                <p class="text-slate-200 leading-relaxed break-words font-medium">${text}</p>
+            `;
+            chatMessages.appendChild(container);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+
+        // Peripheral Hardware Device UI Interactive Mute State Handlers
+        toggleMicBtn.addEventListener('click', () => {
+            if (!localStream) return;
+            micEnabled = !micEnabled;
+            localStream.getAudioTracks().forEach(t => t.enabled = micEnabled);
+            toggleMicBtn.textContent = micEnabled ? '🎤' : '🎙️';
+            toggleMicBtn.classList.toggle('bg-red-950', !micEnabled);
+            toggleMicBtn.classList.toggle('border-red-500', !micEnabled);
+        });
+
+        toggleCamBtn.addEventListener('click', () => {
+            if (!localStream) return;
+            camEnabled = !camEnabled;
+            localStream.getVideoTracks().forEach(t => t.enabled = camEnabled);
+            toggleCamBtn.textContent = camEnabled ? '📷' : '📹';
+            toggleCamBtn.classList.toggle('bg-red-950', !camEnabled);
+            toggleCamBtn.classList.toggle('border-red-500', !camEnabled);
+        });
+
+        // Bootstrap Core Functional Runtime
+        startSession();
+    </script>
 </body>
 </html>
